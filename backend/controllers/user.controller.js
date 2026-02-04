@@ -281,7 +281,7 @@ export const followOrUnfollow = async (req, res) => {
     }
 
     //now we check what should we do follow or unfollow
-    const isFollowing = currentUser.following.includes(targetUser);
+    const isFollowing = currentUser.following.includes(targetUserId);
     if (isFollowing) {
       //unfollow logic
       await Promise.all([

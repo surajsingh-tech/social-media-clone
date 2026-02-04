@@ -3,7 +3,7 @@ const postSchema = new mongoose.Schema(
   {
     caption: { type: String, default: "" },
     image: { type: String, required: true },
-    auther: {
+    author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -16,3 +16,4 @@ const postSchema = new mongoose.Schema(
 
 const Post = mongoose.model("Post", postSchema);
 export default Post;
+ 
