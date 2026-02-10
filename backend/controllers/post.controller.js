@@ -1,16 +1,14 @@
 import Post from "../model/post.model.js";
 import User from "../model/user.model.js";
 import sharp from "sharp";
-import cloudinary from "../utils/cloudinary";
+import cloudinary from "../utils/cloudinary.js";
 import Comment from "../model/comment.model.js";
-import { populate } from "dotenv";
 export const addNewPost = async (req, res) => {
   try {
     const userId = req.id;
     const { caption } = req.body;
     const image = req.file;
 
-    console.log("image file", image);
     if (!image)
       return res
         .status(400)
@@ -22,7 +20,6 @@ export const addNewPost = async (req, res) => {
       .toFormat("jpeg", { quality: 80 })
       .toBuffer();
 
-    console.log("optimizedImageBuffer ", optimizedImageBuffer);
 
     //buffer to data uri
     const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString("base64")}`;
@@ -47,9 +44,9 @@ export const addNewPost = async (req, res) => {
     }
 
     await post.populate({ path: "author", select: "-password" });
-    return res.status(201).json({
+    return res.status(200).json({
       message: "New Post Added",
-      success: true,
+      success: true, 
       post,
     });
   } catch (error) {
@@ -65,13 +62,13 @@ export const getAllPost = async (req, res) => {
   try {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
-      .populate({ path: "author", select: "username,profilePicture" })
+      .populate({ path: "author", select: "username profilePicture" })
       .populate({
         path: "comments",
         sort: { createdAt: -1 },
         populate: {
           path: "author",
-          select: "username,profilePicture",
+          select: "username profilePicture",
         },
       });
     return res.status(200).json({
@@ -238,7 +235,7 @@ export const deletePost = async (req, res) => {
   try {
     const postId = req.params.id;
     const authorId = req.id;
-    const post = Post.findById(postId);
+    const post =await Post.findById(postId);
     if (!post) {
       return res.status(404).json({
         message: "Post not found",
@@ -247,7 +244,7 @@ export const deletePost = async (req, res) => {
     }
 
     //Check if the login user is the owner of the post
-    if (!post.author.toString() === authorId) {
+    if (post.author.toString() !== authorId) {
       return res.status(403).json({
         message: "Unauthorized User",
         success: false,
@@ -259,7 +256,7 @@ export const deletePost = async (req, res) => {
     //Remove the post Id from the user Post
     let user = await User.findById(authorId);
 
-    user.posts = user.posts.filter((id) => id.tostring() !== postId);
+    user.posts = user.posts.filter((id) => id.toString() !== postId);
     await user.save();
 
     //Delete associated comments

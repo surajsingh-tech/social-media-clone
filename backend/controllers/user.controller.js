@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
-import mongoose  from "mongoose";
-import Post from '../model/post.model.js'
+import mongoose from "mongoose";
+import Post from "../model/post.model.js";
 
 export const register = async (req, res) => {
   try {
@@ -23,7 +23,6 @@ export const register = async (req, res) => {
       });
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
-
       await User.create({
         username,
         email,
@@ -74,17 +73,18 @@ export const login = async (req, res) => {
     const token = await jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
       expiresIn: "1d",
     });
+
     //populate each post id in post array
-    const populatePosts= await Promise.all(
-      user?.posts.map(async (postId)=>{ 
-          const post = await Post.findById(postId)
-          if(post.author.equals(user._id))
-          { 
-            return post;
-          }
-          return null;
-      })
-    )
+    const populatePosts = await Promise.all(
+      user?.posts.map(async (postId) => {
+        const post = await Post.findById(postId);
+        if (post?.author?.equals(user._id)) {
+          return post;
+        }
+        return null;
+      }),
+    );
+
     user = {
       _id: user._id,
       username: user.username,
@@ -96,8 +96,8 @@ export const login = async (req, res) => {
       posts: populatePosts,
     };
 
-    
-    return res.cookie("token", token, {
+    return res
+      .cookie("token", token, {
         httpOnly: true,
         sameSite: "strict",
         maxAge: 1 * 24 * 60 * 60 * 1000,
@@ -165,16 +165,15 @@ export const getProfile = async (req, res) => {
   }
 };
 
-
 export const editProfile = async (req, res) => {
   try {
-    const userId = req.id; // from middleware 
+    const userId = req.id; // from middleware
     const { bio, gender } = req.body;
     const profilePicture = req.file;
     let cloudResponse;
 
-    // DB  user fetch 
-    const user = await User.findById(userId).select('-password');
+    // DB  user fetch
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
         message: "User not found",
@@ -202,18 +201,17 @@ export const editProfile = async (req, res) => {
       user.gender = gender;
       updated = true;
     }
-    
+
     // 3️ Profile picture update
     if (profilePicture) {
       const fileUri = getDataUri(profilePicture);
       cloudResponse = await cloudinary.uploader.upload(fileUri);
       if (!cloudResponse || !cloudResponse.secure_url) {
-          return res.status(500).json({
-            message: "Image upload failed",
-            success: false,
-          });
-        }
-      else{
+        return res.status(500).json({
+          message: "Image upload failed",
+          success: false,
+        });
+      } else {
         user.profilPicture = cloudResponse.secure_url;
         updated = true;
       }
@@ -227,7 +225,7 @@ export const editProfile = async (req, res) => {
       });
     }
 
-    // Save changes 
+    // Save changes
     await user.save();
 
     return res.status(200).json({
@@ -235,7 +233,6 @@ export const editProfile = async (req, res) => {
       success: true,
       user,
     });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -245,12 +242,13 @@ export const editProfile = async (req, res) => {
   }
 };
 
-
 export const getSuggestedUsers = async (req, res) => {
   try {
-    const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select('-password');
-    console.log("ss",suggestedUsers);
-    
+    const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select(
+      "-password",
+    );
+    console.log("ss", suggestedUsers);
+
     if (!suggestedUsers) {
       return res.status(400).json({
         message: "Currently do not have any users",
