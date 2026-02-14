@@ -3,6 +3,7 @@ import User from "../model/user.model.js";
 import sharp from "sharp";
 import cloudinary from "../utils/cloudinary.js";
 import Comment from "../model/comment.model.js";
+import { getReceiverSocketId , io} from "../socket/socket.js";
 export const addNewPost = async (req, res) => {
   try {
     const userId = req.id;
@@ -76,7 +77,6 @@ export const getAllPost = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.log(err);
     return res.status(500).json({
       message: "Server error",
       success: false,
@@ -128,6 +128,21 @@ export const likePost = async (req, res) => {
     await post.save();
 
     //Implimint socit Io for notification
+    const user = await User.findById(likeUserId).select('username profilePicture')
+    const postOwnerId = post.author.toString();
+    if(postOwnerId !== likeUserId)
+    {
+      //emit notification event
+      const notification = {
+        type:'like',
+        userId:likeUserId,
+        userDetails:user,
+        postId,
+        message:'Your Post was Liked'  
+      }
+      const postOwnerSockitID = getReceiverSocketId(postOwnerId)
+      io.to(postOwnerSockitID).emit('notificetion',notification)
+    }
 
     return res.status(200).json({ message: "Post Like", success: true });
   } catch (error) {
@@ -156,6 +171,21 @@ export const dislikePost = async (req, res) => {
     await post.save();
 
     //Implimint socit Io for notification
+    const user = await User.findById(likeUserId).select('username profilePicture')
+    const postOwnerId = post.author.toString();
+    if(postOwnerId !== likeUserId)
+    {
+      //emit notification event
+      const notification = {
+        type:'dislike',
+        userId:likeUserId,
+        userDetails:user,
+        postId,
+        message:'Your Post was Liked'  
+      }
+      const postOwnerSockitID = getReceiverSocketId(postOwnerId)
+      io.to(postOwnerSockitID).emit('notificetion',notification)
+    }
 
     return res.status(200).json({ message: "Post disliked", success: true });
   } catch (error) {
@@ -176,20 +206,23 @@ export const addComment = async (req, res) => {
     if (!text || text.trim() === "")
       res.status(400).json({ message: "Text is required", success: false });
 
-    const comment = await Comment.create({
+    let comment = await Comment.create({
       text,
       author: commentUserId,
       post: postId,
-    }).populate({
+    })
+
+   await comment.populate({
       path: "author",
-      select: "username , profilePicture",
+      select: "username profilePicture",
     });
+
 
     post.comments.push(comment._id);
     await post.save();
 
     return res.status(201).json({
-      messsage: "comment added",
+      message: "comment added",
       comment,
       success: true,
     });
@@ -207,7 +240,7 @@ export const getPostComments = async (req, res) => {
     const postId = req.params.id;
     const comments = await Comment.find({ post: postId }).populate(
       "auther",
-      "username,profilePicture",
+      "username profilePicture",
     ); //shortcut populate
 
     if (!comments) {

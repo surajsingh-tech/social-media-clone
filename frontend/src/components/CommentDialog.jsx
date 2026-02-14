@@ -1,13 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import Comment from "./Comment";
+import { setPost } from "@/redux/postSlice";
+
 
 export default function CommentDialog({ open, setOpen }) {
   const [text, setText] = useState("");
+  const {selectedPost}=useSelector(store=>store.post)
+  const [postComments,setPostcomments]=useState([])
+  const allPost=useSelector(store=>store.post.posts||[])
+  const dispatch=useDispatch()
+ 
+  useEffect(()=>{
+    if(selectedPost)
+    {
+    setPostcomments(selectedPost.comments)
+    }
+  },[selectedPost])
 
   const isDisabled = text.trim().length === 0;
 
@@ -15,28 +30,41 @@ export default function CommentDialog({ open, setOpen }) {
     const inputText = e.target.value;
     setText(inputText.trim() ? inputText : "");
   };
-
-  const sendMessage = async (e) => {
-    e.preventDefault();
+  
+  
+  const commentHandler = async (e) => {
+    e.preventDefault()
     try {
+     
       const res = await axios.post(
-        `http://localhost:8000/api/v1/user/send/`,
+        `http://localhost:8000/api/v1/post/${selectedPost?._id}/comment`,
         { text },
         {
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           withCredentials: true,
         },
       );
-
       if (res.data.success) {
-        toast.success(res.data.message);
-      }
+        const updateComment=[res.data?.comment,...postComments]
+        setPostcomments(updateComment)
+       
+        const allComments = allPost?.map(p=>(
+          p._id===selectedPost._id ? {...p, comments : updateComment} :p
+        ))
 
-      setText("");
+        dispatch(setPost(allComments))
+        toast.success(res.data.message);
+        setText("");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error sending message");
+      console.log(error);
+      
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -51,7 +79,7 @@ export default function CommentDialog({ open, setOpen }) {
           <div className="flex w-full md:w-1/2 bg-black items-center justify-center h-60 md:h-auto">
             <img
               className="w-full h-full object-contain"
-              src="https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?q=80&w=764&auto=format&fit=crop"
+              src={selectedPost?.image}
               alt="Post_image"
             />
           </div>
@@ -63,11 +91,11 @@ export default function CommentDialog({ open, setOpen }) {
               <div className="flex gap-3 items-center">
                 <Link>
                   <Avatar>
-                    <AvatarImage src="" alt="avatar" />
+                    <AvatarImage src={selectedPost?.author?.profilePicture} alt="avatar" />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                 </Link>
-                <Link className="font-semibold text-xs">username</Link>
+                <Link className="font-semibold text-xs">{selectedPost?.author?.username}</Link>
               </div>
 
               <Dialog>
@@ -87,7 +115,9 @@ export default function CommentDialog({ open, setOpen }) {
 
             {/* Comments list */}
             <div className="flex-1 overflow-y-auto p-4 text-sm">
-              all comments all comments all comments all comments
+              {postComments?.map(comment=>(
+                 <Comment key={comment._id} comment={comment}/>
+              ))}
             </div>
 
             {/* Input */}
@@ -95,14 +125,14 @@ export default function CommentDialog({ open, setOpen }) {
               <div className="flex flex-1 items-center gap-2">
                 <input
                   value={text}
-                  onChange={changeEventhandler}
+                  onChange={(e)=>changeEventhandler(e)}
                   type="text"
                   className="w-full outline-none border border-gray-300 p-2 rounded text-sm"
                   placeholder="Add a Comment..."
                 />
                 <button
                   disabled={isDisabled}
-                  onClick={sendMessage}
+                  onClick={(e)=>commentHandler(e)}
                   className="text-blue-500 font-semibold disabled:text-gray-400"
                 >
                   Send

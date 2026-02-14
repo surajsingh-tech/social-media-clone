@@ -9,7 +9,7 @@ import upload from "../middlewares/multer.js";
 
 router.route('/register').post(register) 
 router.route('/login').post(login)
-router.route('/logout').post(logout)
+router.route('/logout').get(logout)
 router.route('/:id/profile').get(isAuthenticated,getProfile)
 router.route('/profile/edit').patch(isAuthenticated,upload.single('profilePicture'),editProfile)
 router.route('/suggested').get(isAuthenticated,getSuggestedUsers)

@@ -19,7 +19,6 @@ export default function CreatePost({ open, setOpen }) {
   const [file, setFile] = useState("");
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate=useNavigate()
   const {user}=useSelector(state=>state.auth)
   const dispatch=useDispatch()
   const {posts}=useSelector(state=>state.post)
@@ -67,12 +66,14 @@ export default function CreatePost({ open, setOpen }) {
         },
       );
       
- 
       if(res.data.success)
       {
          toast.success(res.data.message);
          dispatch(setPost([res.data.post,...posts]))
          setOpen(false)
+         setCaption('')
+         setFile('')
+         setImagePreview('')
       }
       
     } catch (error) {

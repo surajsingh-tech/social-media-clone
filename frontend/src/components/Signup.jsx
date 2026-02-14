@@ -12,6 +12,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import axios from "axios";
 import { toast } from "sonner";
+import { useSelector } from "react-redux";
 
 export default function Signup() {
   const [input, setInput] = useState({
@@ -20,6 +21,9 @@ export default function Signup() {
     password: "",
   });
 
+  console.log("input ",input);
+  
+   const {user} = useSelector(store=>store.auth)
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +45,7 @@ export default function Signup() {
         {
           headers: { "Content-Type": "application/json" },
           withCredentials: true
-        },
+        }
       );
 
       if (res.data.success) {
@@ -59,6 +63,13 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+     useEffect(()=>{
+        if(user)
+        {
+          navigate('/')
+        }
+      },[])
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">

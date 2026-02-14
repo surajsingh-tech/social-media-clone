@@ -12,7 +12,7 @@ import { Label } from "../components/ui/label";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setAuthUser } from "@/redux/authSlice";
 
 export default function Login() {
@@ -23,6 +23,7 @@ export default function Login() {
   const dispatch=useDispatch()
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const {user} = useSelector(store=>store.auth)
 
   let getInput = (e) => {
     let { name, value } = e.target;
@@ -52,7 +53,7 @@ export default function Login() {
           email: "",
           password: "",
         });
-        navigate("/home");
+        navigate("/");
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
@@ -60,6 +61,13 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+   useEffect(()=>{
+    if(user)
+    {
+      navigate('/')
+    }
+  },[])
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">

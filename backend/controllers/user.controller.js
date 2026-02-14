@@ -8,12 +8,12 @@ import Post from "../model/post.model.js";
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password } = req.body.input;
     if (!username || !email || !password) {
       return res.status(401).json({
         message: "Something is missing , please check",
         success: false,
-      });
+      })
     }
     const user = await User.findOne({ email });
     if (user) {
@@ -143,7 +143,7 @@ export const getProfile = async (req, res) => {
       });
     }
 
-    let user = await User.findById(userId).select("-password"); //sensitive data hide
+    let user = await User.findById(userId).populate({path:'posts' , createdAt:-1 }).populate({path:'bookmarks'});
 
     if (!user) {
       return res.status(404).json({
@@ -169,6 +169,8 @@ export const editProfile = async (req, res) => {
   try {
     const userId = req.id; // from middleware
     const { bio, gender } = req.body;
+   
+    
     const profilePicture = req.file;
     let cloudResponse;
 
@@ -212,7 +214,7 @@ export const editProfile = async (req, res) => {
           success: false,
         });
       } else {
-        user.profilPicture = cloudResponse.secure_url;
+        user.profilePicture = cloudResponse.secure_url;
         updated = true;
       }
     }
@@ -234,7 +236,6 @@ export const editProfile = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({
       message: "Server error",
       success: false,
@@ -247,7 +248,7 @@ export const getSuggestedUsers = async (req, res) => {
     const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select(
       "-password",
     );
-    console.log("ss", suggestedUsers);
+   
 
     if (!suggestedUsers) {
       return res.status(400).json({

@@ -26,6 +26,6 @@ router
   .route("/:id/comment/all")
   .post(isAuthenticated, upload.single("image"), getPostComments);
 router.route("/delete/:id").delete(isAuthenticated, deletePost);
-router.route("/:id/bookmark").post(isAuthenticated, bookmarkPost);
+router.route("/:id/bookmark").get(isAuthenticated, bookmarkPost);
 
 export default router;

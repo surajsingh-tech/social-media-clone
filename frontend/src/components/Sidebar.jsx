@@ -16,52 +16,54 @@ import { useDispatch, useSelector } from "react-redux";
 import { setAuthUser } from "@/redux/authSlice";
 import { useState } from "react";
 import CreatePost from "./CreatePost";
+import { setPost, setSelectedPost } from "@/redux/postSlice";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Button } from "./ui/button";
 
-
-export default function Sidebar() { 
-  const dispatch=useDispatch()
-  const {user}=useSelector(store=>store.auth)
+export default function Sidebar() {
+  const dispatch = useDispatch();
+  const { user } = useSelector((store) => store.auth);
   const navigate = useNavigate();
-  const [open,setOpen]=useState(false)
+  const [open, setOpen] = useState(false);
+  const { likeNotification } = useSelector(
+    (store) => store.realTimeNotification,
+  );
   const logOut = async () => {
     try {
       const res = await axios.get("http://localhost:8000/api/v1/user/logout", {
         withCredentials: true,
       });
       if (res.data.success) {
-        dispatch(setAuthUser(null))
+        dispatch(setAuthUser(null));
+        dispatch(setPost([]));
+        dispatch(setSelectedPost(null));
         navigate("/login");
-        toast.success(res.data.success.message);
+        toast.success(res.data.message);
       }
     } catch (error) {
       console.log(error);
       toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
- 
-  const sidebar = [
-  { icon: <HomeIcon />, text: "Home" },
-  { icon: <Search />, text: "Search" },
-  { icon: <TrendingUp />, text: "Explore" },
-  { icon: <MessageCircle />, text: "Messages" },
-  { icon: <Heart />, text: "Notifications" },
-  { icon: <PlusSquare />, text: "Create" },
-  {
-    icon: (
-      <Avatar className="w-7 h-7">
-        <AvatarImage
-          src={user?.profilePicture}
-          alt="@shadcn"
-          className="grayscale"
-        />
-        <AvatarFallback>CN</AvatarFallback>
-      </Avatar>
-    ),
-    text: "Profile",
-  },
-  { icon: <LogOut />, text: "Logout" },
-];
 
+  const sidebar = [
+    { icon: <HomeIcon />, text: "Home" },
+    { icon: <Search />, text: "Search" },
+    { icon: <TrendingUp />, text: "Explore" },
+    { icon: <MessageCircle />, text: "Messages" },
+    { icon: <Heart />, text: "Notifications" },
+    { icon: <PlusSquare />, text: "Create" },
+    {
+      icon: (
+        <Avatar className="w-7 h-7">
+          <AvatarImage src={user?.profilePicture} alt="@shadcn" />
+          <AvatarFallback>CN</AvatarFallback>
+        </Avatar>
+      ),
+      text: "Profile",
+    },
+    { icon: <LogOut />, text: "Logout" },
+  ];
 
   const getSidebarText = (text) => {
     switch (text) {
@@ -75,16 +77,16 @@ export default function Sidebar() {
         navigate("/");
         break;
       case "Messages":
-        navigate("/");
+        navigate("/chat");
         break;
       case "Notifications":
         navigate("/");
         break;
       case "Create":
-       setOpen(true)
+        setOpen(true);
         break;
       case "Profile":
-        navigate("/");
+        navigate(`/profile/${user?._id}`);
         break;
       case "Logout":
         logOut();
@@ -103,9 +105,7 @@ export default function Sidebar() {
         "
       >
         <div className="flex items-center justify-center py-4">
-          <h1 className="my-8 pl-3 font-bold text-xl">
-            Logo
-          </h1>
+          <h1 className="my-8 pl-3 font-bold text-xl">Logo</h1>
         </div>
         <div className="flex flex-col flex-1">
           {sidebar.map((item, indx) => (
@@ -120,12 +120,42 @@ export default function Sidebar() {
             >
               {item.icon}
               <span className="hidden md:inline">{item.text}</span>
+              {item?.text === "Notifications" &&
+                likeNotification?.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        size="icon"
+                        className="rounded-full h-5 w-5 absolute bottom-6 left-6 bg-red-600 hover: bg-red-600"
+                      >
+                        {likeNotification.length}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <div className="">
+                            {likeNotification.length===0} 
+                            ? ( <p> NO new Notification </p> ) 
+                            : ({likeNotification?.map((Notifications,indx)=>{
+                              return (
+                                <div key={Notifications?._id||indx} className="flex items-center gap-2 my-2" >
+                                  <Avatar>
+                                    <AvatarImage src={Notifications?.userDetails?.profilePicture}/>
+                                    <AvatarFallback>CN</AvatarFallback>
+                                  </Avatar>
+                                  <p className="text-sm"><span className="font-bold">{Notifications?.userDetails?.username} </span> Liked YOur Post </p> 
+                                </div>
+                              )
+                            })})
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
             </div>
           ))}
         </div>
       </div>
 
-      <CreatePost open={open} setOpen={setOpen}/>
+      <CreatePost open={open} setOpen={setOpen} />
 
       {/* Mobile Bottom Navbar */}
       <div
