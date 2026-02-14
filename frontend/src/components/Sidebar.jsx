@@ -105,7 +105,7 @@ export default function Sidebar() {
         "
       >
         <div className="flex items-center justify-center py-4">
-          <h1 className="my-8 pl-3 font-bold text-xl">Logo</h1>
+          <h1 className="my-8 pl-3 font-bold text-xl text-bold">Gup Shup App</h1>
         </div>
         <div className="flex flex-col flex-1">
           {sidebar.map((item, indx) => (
