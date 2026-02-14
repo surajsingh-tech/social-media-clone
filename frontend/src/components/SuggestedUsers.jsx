@@ -1,16 +1,52 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
+import { setFollow, setUnfollow } from "@/redux/authSlice";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 export default function SuggestedUsers() {
   const { suggestedUsers } = useSelector((store) => store.auth);
+  const auth = useSelector((store) => store.auth.user);
+  const dispatch = useDispatch()
+  const [followState, setFollowState] = useState({});
+    const followUnfollowHandler=async(suggestUserId)=>{
+      try {
+        const res = await axios.get(`http://localhost:8000/api/v1/user/followorunfollow/${suggestUserId}`,{withCredentials:true})
+        if(res.data.success)
+        {
+          setFollowState(pre=>({...pre,[suggestUserId]:res.data.follow}))
+          toast.success(res.data.message)
+          if(res.data?.follow)
+          {
+            dispatch(setFollow(suggestUserId))
+          }
+          else if(! res.data?.follow){
+            dispatch(setUnfollow(suggestUserId))
+          }
+        }
+      } catch (error) {
+        
+        toast.error(error.response?.data?.message || 'Somthing went wrong')
+      }
+  }
 
+ useEffect(()=>{
+    if(suggestedUsers && auth)
+    {
+      const state={}
+      suggestedUsers.forEach(user=>state[user._id]=user.followers.includes(auth?._id))
+      setFollowState(state)
+    }
+ },[suggestedUsers,auth?._id])
+
+ 
   return (
-    <div className="my-6 sm:my-8 px-2 sm:px-0">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h1 className="font-semibold text-gray-500 text-xs sm:text-sm">
+    <div className="bg-white rounded-xl border shadow-sm p-5 my-6">
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="font-semibold text-gray-500 text-sm">
           Suggested for you
         </h1>
         <span className="font-medium text-xs cursor-pointer hover:underline">
@@ -18,40 +54,59 @@ export default function SuggestedUsers() {
         </span>
       </div>
 
-      {/* Users */}
-      <div className="space-y-3 sm:space-y-4">
-        {suggestedUsers?.map((user) => (
-          <div
-            key={user._id}
-            className="flex items-center justify-between hover:bg-gray-50 p-2 rounded-lg transition"
-          >
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Link to={`/profile/${user?._id}`}>
-                <Avatar className="w-8 h-8 sm:w-9 sm:h-9 ring-2 ring-gray-100">
-                  <AvatarImage src={user?.author?.profilePicture} />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-              </Link>
-
-              <div className="flex flex-col min-w-0">
-                <Link
-                  to={`/profile/${user?._id}`}
-                  className="font-semibold text-xs sm:text-sm truncate hover:underline"
-                >
-                  {user?.username ?? ""}
+      <div className="space-y-4">
+        {suggestedUsers?.map((user) => { 
+          const isFollow = followState[user._id];
+          return (
+            <div
+              key={user._id}
+              className="flex items-center justify-between hover:bg-gray-50 p-3 rounded-lg transition"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Link to={`/profile/${user?._id}`}>
+                  <Avatar className="w-10 h-10 ring-2 ring-gray-100">
+                    <AvatarImage src={user?.profilePicture} />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
                 </Link>
 
-                <span className="text-gray-500 text-[10px] sm:text-xs truncate max-w-[120px] sm:max-w-[150px] mt-1">
-                  {user?.bio || "Bio here..."}
-                </span>
-              </div>
-            </div>
+                <div className="flex flex-col min-w-0">
+                  <Link
+                    to={`/profile/${user?._id}`}
+                    className="font-semibold text-sm truncate hover:underline"
+                  >
+                    {user?.username ?? ""}
+                  </Link>
 
-            <button className="text-blue-500 text-[11px] sm:text-xs font-semibold hover:text-blue-700">
-              Follow
-            </button>
-          </div>
-        ))}
+                  <span className="text-gray-500 text-xs truncate max-w-[180px] mt-1">
+                    {user?.bio || "Bio here..."}
+                  </span>
+                </div>
+              </div>
+
+              {/* Button */}
+              {isFollow ? (
+                <Button
+                  onClick={() => followUnfollowHandler(user?._id)}
+                  className="px-4 py-1.5 text-xs font-semibold rounded-full
+                  bg-red-100 text-red-600 hover:bg-red-200
+                  active:scale-95 transition"
+                >
+                  Unfollow
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => followUnfollowHandler(user?._id)}
+                  className="px-4 py-1.5 text-xs font-semibold rounded-full
+                  bg-green-600 text-white hover:bg-green-700
+                  active:scale-95 transition shadow-sm"
+                >
+                  Follow
+                </Button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

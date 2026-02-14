@@ -41,7 +41,34 @@ export const register = async (req, res) => {
       success: false,
     });
   }
-};
+}; 
+
+
+export const getUserDetails =async (req,res)=>{
+  try {
+    const userId=req.params.id;
+    let user = await User.findById(userId).select('-password')
+    if(user){
+     return res.status(200).json({
+        success:true,
+        user:user
+      })
+    }
+    else{
+      return res.status(404).json({
+        success:false,
+        message:'User not found'
+      })
+    }
+  } catch (error) {
+     console.log(error);
+     return res.status(500).json({
+      message: "Server error",
+      success: false,
+    });
+  }
+}
+
 
 export const login = async (req, res) => {
   try {
@@ -186,13 +213,13 @@ export const editProfile = async (req, res) => {
     // Flag to check agar koi field update hui ya nahi
     let updated = false;
 
-    // 1️⃣ Bio update (sirf agar non-empty string ho)
+    // 1️ Bio update (sirf agar non-empty string ho)
     if (bio && bio.trim() !== "") {
       user.bio = bio.trim();
       updated = true;
     }
 
-    // 2️⃣ Gender update (sirf valid values)
+    // 2️ Gender update (sirf valid values)
     if (gender) {
       if (!["male", "female", "other"].includes(gender)) {
         return res.status(400).json({
@@ -270,6 +297,7 @@ export const getSuggestedUsers = async (req, res) => {
   }
 };
 
+
 export const followOrUnfollow = async (req, res) => {
   try {
     const currentUserId = req.id;
@@ -277,7 +305,7 @@ export const followOrUnfollow = async (req, res) => {
 
     if (currentUserId === targetUserId) {
       return res.status(400).json({
-        message: "You can't Follow or Unfollow Yourself",
+        message: "You can't follow yourself",
         success: false,
       });
     }
@@ -286,48 +314,52 @@ export const followOrUnfollow = async (req, res) => {
     const targetUser = await User.findById(targetUserId);
 
     if (!currentUser || !targetUser) {
-      return res.status(400).json({
-        message: "user not found",
+      return res.status(404).json({
+        message: "User not found",
         success: false,
       });
     }
 
-    //now we check what should we do follow or unfollow
     const isFollowing = currentUser.following.includes(targetUserId);
+
     if (isFollowing) {
-      //unfollow logic
-      await Promise.all([
-        //Promise.all use when we handle multiple doc at same time
-        User.updateOne(
-          { _id: currentUserId },
-          { $pull: { following: targetUserId } },
-        ),
-        User.updateOne(
-          { _id: targetUserId },
-          { $pull: { followers: currentUserId } },
-        ),
-      ]);
-      return res.status(200).json({
-        message: "Unfollow Successfully",
-        success: false,
-      });
-    } else {
-      //follow logic
+      // UNFOLLOW
       await Promise.all([
         User.updateOne(
           { _id: currentUserId },
-          { $push: { following: targetUserId } },
+          { $pull: { following: targetUserId } }
         ),
         User.updateOne(
           { _id: targetUserId },
-          { $push: { followers: currentUserId } },
+          { $pull: { followers: currentUserId } }
         ),
       ]);
+
       return res.status(200).json({
-        message: "Followed Successfully",
-        success: false,
+        message: "Unfollowed successfully",
+        success: true,
+        follow: false,
       });
     }
+
+    // FOLLOW
+    await Promise.all([
+      User.updateOne(
+        { _id: currentUserId },
+        { $addToSet: { following: targetUserId } }
+      ),
+      User.updateOne(
+        { _id: targetUserId },
+        { $addToSet: { followers: currentUserId } }
+      ),
+    ]);
+
+    return res.status(200).json({
+      message: "Followed successfully",
+      success: true,
+      follow: true,
+    });
+
   } catch (error) {
     console.log(error);
     return res.status(500).json({

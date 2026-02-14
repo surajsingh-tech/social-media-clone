@@ -1,5 +1,4 @@
 import { setSuggestUser } from "@/redux/authSlice";
-import { setPost } from "@/redux/postSlice";
 import axios from "axios";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";

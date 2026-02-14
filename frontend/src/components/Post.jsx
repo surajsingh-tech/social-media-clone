@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Bookmark, MessageCircle, MoreHorizontal, Send } from "lucide-react";
@@ -10,8 +10,12 @@ import axios from "axios";
 import { toast } from "sonner";
 import { setPost, setSelectedPost } from "@/redux/postSlice";
 import { Badge } from "./ui/badge";
+import { useNavigate } from "react-router-dom";
+import { setUnfollow ,setFollow} from "@/redux/authSlice";
+
 
 export default function Post({ post }) {
+
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const { user } = useSelector((store) => store.auth);
@@ -20,7 +24,9 @@ export default function Post({ post }) {
   const dispatch = useDispatch();
   const [like, setLike] = useState(post.likes.includes(user?._id) || false);
   const [postLike, setPostLike] = useState(post.likes?.length);
+  const [follow,setFollowbtn] =useState(false)
 
+ 
   const likeOrDislikeHandler = async (postId) => {
     try {
       const action = like ? "dislike" : "like";
@@ -116,6 +122,38 @@ export default function Post({ post }) {
       }
   }
 
+  const followUnfollowHandler=async()=>{
+      try {
+        const res = await axios.get(`http://localhost:8000/api/v1/user/followorunfollow/${post?.author?._id}`,{withCredentials:true})
+        if(res.data.success)
+        {
+          toast.success(res.data.message)
+          if(res.data?.follow)
+          {
+            dispatch(setFollow(post?.author?._id))
+            setFollowbtn(true)
+          }
+          else if(! res.data?.follow){
+            dispatch(setUnfollow(post?.author?._id))
+            setFollowbtn(false)
+          }
+        }
+
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Somthing went wrong')
+      }
+  }
+  
+  useEffect(()=>{
+    if(user)
+    {
+     const isFollowing  =  user?.following?.includes(post?.author?._id)
+     if(isFollowing)
+     {
+      setFollowbtn(true)
+     }}
+  },[])
+  
   return (
     <div className="my-6 w-full max-w-md mx-auto bg-white rounded-2xl shadow-md border overflow-hidden">
       {/* Header */}
@@ -138,10 +176,10 @@ export default function Post({ post }) {
            
           <DialogContent className="flex flex-col items-center text-sm text-center">
              {
-              post?.author?._id !== user?._id &&  <Button variant="ghost" className="w-full text-red-500 font-bold">
-              Unfollow
-            </Button>
-            }
+              post?.author?._id !== user?._id && (
+              follow ? ( <Button onClick={followUnfollowHandler} variant="ghost" className="w-full text-red-500 font-bold"> Unfollow  </Button> )
+               : ( <Button onClick={followUnfollowHandler} variant="ghost" className="w-full text-green-500 font-bold"> Follow  </Button> )
+            )}
            
             <Button variant="ghost" className="w-full">
               Add to Favorites

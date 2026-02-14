@@ -124,7 +124,7 @@ export const likePost = async (req, res) => {
     }
 
     //Like logic
-    await Post.updateOne({ $addToSet: { likes: likeUserId } }); //for only unique value insert in array
+    await Post.updateOne({_id : postId},{ $addToSet: { likes: likeUserId } }); //for only unique value insert in array
     await post.save();
 
     //Implimint socit Io for notification
@@ -167,7 +167,7 @@ export const dislikePost = async (req, res) => {
     }
 
     //Like logic
-    await Post.updateOne({ $pull: { likes: likeUserId } }); //for only unique value insert in array
+    await Post.updateOne({_id : postId},{ $pull: { likes: likeUserId } }); //for only unique value insert in array
     await post.save();
 
     //Implimint socit Io for notification

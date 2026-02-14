@@ -40,11 +40,11 @@ export default function EditProfile() {
 
   const editProfileHandler = async () => {
     const formData = new FormData();
-    formData.append("bio", input.bio);
-    formData.append("gender", input.gender);
-    if (input.profilePicture) {
+    if (input.bio) formData.append("bio", input.bio);
+    if (input.gender) formData.append("gender", input.gender);
+    if (input.profilePicture)
       formData.append("profilePicture", input.profilePicture);
-    }
+
     try {
       setLoading(true);
       const res = await axios.patch(
@@ -55,7 +55,7 @@ export default function EditProfile() {
             "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
-        }
+        },
       );
       if (res.data.success) {
         const updatedUserData = {
@@ -127,7 +127,10 @@ export default function EditProfile() {
         {/* Gender Section */}
         <div className="mt-6">
           <h1 className="text-left font-semibold mb-2">Gender</h1>
-          <Select defaultValue={input.gender} onValueChange={selectChangeHandler}>
+          <Select
+            defaultValue={input.gender}
+            onValueChange={selectChangeHandler}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
